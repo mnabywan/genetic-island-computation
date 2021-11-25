@@ -46,7 +46,7 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         #TODO change connection to rabitmq from Docker
         self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
         self.channel = self.connection.channel()
-        for i in range(0, self.number_of_islands ):
+        for i in range(0, self.number_of_islands):
             self.channel.queue_declare(queue=f'island-from-{self.island}-to-{i}')
 
         self.rabbitmq_configuration = {}
@@ -55,7 +55,7 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
 
     def get_individuals_to_migrate(self, population: List[S], number_of_emigrants: int) -> List[S]:
         if len(population) < number_of_emigrants:
-            raise ValueError("Ppulation is too small")
+            raise ValueError("Population is too small")
 
         emigrants = [population.pop(random.randrange(len(population))) for _ in range(0, number_of_emigrants)]
         return emigrants
@@ -64,17 +64,18 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         if self.evaluations - self.last_migration_evolution >= self.migration_interval:
             try:
                 individuals_to_migrate = self.get_individuals_to_migrate(self.solutions, self.number_of_emigrants)
+                self.last_migration_evolution = self.evaluations
             except ValueError:
                 return
 
             #TODO: migrate every chosen individual
             for i in individuals_to_migrate:
-                island_to_migrate = [i for i in range(0, self.number_of_islands) if i != self.island].random()
-                pass
+                island_to_migrate = random.choice([i for i in range(0, self.number_of_islands) if i != self.island])
+
                 # self.channel.basic_publish(exchange='',
                 #                       routing_key='hello',
-                #                       body=json.loads(i.__dict__))
-                pass
+                #                       body=json.dumps(i.__dict__))
+
 
     def add_new_individuals(self):
         pass
