@@ -21,7 +21,8 @@ It creates queues based on configurations file
 3. Run islands. In e.g. 3 (`number_of_islands` parameter in configuration json file) terminals run commands:
 ```bash
 cd algorithm
-python run_algorithm.py <island> (if number_of_islands == 2 then island = 0 or 1 or 2)
+#(if number_of_islands == 2 then island = 0 or 1 or 2)
+python run_algorithm.py <island> 
    ```
 
 ## Todo
