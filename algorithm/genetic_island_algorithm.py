@@ -11,6 +11,7 @@ from jmetal.util.generator import Generator
 from jmetal.util.termination_criterion import TerminationCriterion
 import random
 import pika
+from jmetal.core.solution import FloatSolution
 
 S = TypeVar('S')
 R = TypeVar('R')
@@ -29,6 +30,7 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
                  number_of_islands: int,
                  number_of_emigrants: int,
                  island: int,  # island identifier
+                 rabbitmq_delays: dict,
 
                  termination_criterion: TerminationCriterion = store.default_termination_criteria,
                  population_generator: Generator = store.default_generator,
@@ -46,11 +48,24 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         #TODO change connection to rabitmq from Docker
         self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
         self.channel = self.connection.channel()
-        for i in range(0, self.number_of_islands):
-            self.channel.queue_declare(queue=f'island-from-{self.island}-to-{i}')
 
-        self.rabbitmq_configuration = {}
+        self.rabbitmq_delays = rabbitmq_delays
         self.queue_name = f'island-{self.island}'
+
+        # Configure queue for that island
+
+        self.channel.queue_bind(exchange='amq.direct',
+                           queue=self.queue_name)
+
+        # Configure delay queues for that island
+        self.delay_channel = self.connection.channel()
+
+        delays = rabbitmq_delays[str(self.island)]
+        print(delays)
+        for i in range(0, self.number_of_islands):
+            if i != self.island:
+                self.delay_channel.queue_bind(exchange='amq.direct',
+                                              queue=f'island-from-{self.island}-to-{i}')
 
 
     def get_individuals_to_migrate(self, population: List[S], number_of_emigrants: int) -> List[S]:
@@ -63,6 +78,7 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
     def migrate_individuals(self):
         if self.evaluations - self.last_migration_evolution >= self.migration_interval:
             try:
+                print(f"Number of evaluations {self.evaluations}")
                 individuals_to_migrate = self.get_individuals_to_migrate(self.solutions, self.number_of_emigrants)
                 self.last_migration_evolution = self.evaluations
             except ValueError:
@@ -70,16 +86,28 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
 
             #TODO: migrate every chosen individual
             for i in individuals_to_migrate:
-                island_to_migrate = random.choice([i for i in range(0, self.number_of_islands) if i != self.island])
-
-                # self.channel.basic_publish(exchange='',
-                #                       routing_key='hello',
-                #                       body=json.dumps(i.__dict__))
-
+                destination = random.choice([i for i in range(0, self.number_of_islands) if i != self.island])
+                print(f"Destination {destination}")
+                self.channel.basic_publish(exchange='',
+                                      routing_key=f"island-from-{self.island}-to-{destination}",
+                                      body=json.dumps(i.__dict__))
 
     def add_new_individuals(self):
-        pass
+        new_individuals = []
+        for i in range(0, 10):
+            method, properties, body = self.channel.basic_get(f'island-{self.island}')
+            if body:
+                data_str = body.decode("utf-8")
+                data = json.loads(data_str)
+                float_solution = FloatSolution(data['lower_bound'], data['upper_bound'],
+                                               data['number_of_variables'], data['number_of_objectives'],
+                                               )
+                float_solution.objectives = data['objectives']
+                float_solution.variables = data['variables']
+                float_solution.number_of_constraints = data['number_of_constraints']
+                new_individuals.append(float_solution)
 
+        self.solutions += new_individuals
 
     def step(self):
         self.migrate_individuals()
@@ -93,6 +121,9 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         offspring_population = self.evaluate(offspring_population)
 
         self.solutions = self.replacement(self.solutions, offspring_population)
+
+        print("Number of evaluations: {}".format(self.evaluations))
+
 
     def update_min_fitness_per_evaluation(self):
         min_fitness = min(self.solutions, key=lambda x: x.objectives[0])

@@ -11,20 +11,20 @@ import os
 
 
 def run():
-    conf_file = sys.argv[1]
-    island = sys.argv[2]
+    conf_file = 'configurations/algorithm_configuration.json'
+    island = int(sys.argv[1])
     with open(conf_file) as file:
         configuration = json.loads(file.read())
 
-    NUMBER_OF_VARIABLES = 5
-    NUMBER_OF_EVALUATIONS = 10000
+    NUMBER_OF_VARIABLES = 2
+    NUMBER_OF_EVALUATIONS = 100000
     problem = Rastrigin(NUMBER_OF_VARIABLES)
 
     print(configuration["number_of_islands"])
     genetic_island_algorithm = GeneticIslandAlgorithm(
         problem=problem,
-        population_size=100,
-        offspring_population_size=20,
+        population_size=30,
+        offspring_population_size=6,
         mutation=PolynomialMutation(
             1.0 / problem.number_of_variables, 20.0),
         crossover=SBXCrossover(0.9, 20.0),
@@ -32,7 +32,8 @@ def run():
         migration_interval=configuration["migration_interval"],
         number_of_islands=configuration["number_of_islands"],
         number_of_emigrants=configuration["number_of_migrants"],
-        island=1,
+        island=island,
+        rabbitmq_delays=configuration["island_delays"],
         termination_criterion=StoppingByEvaluations(
             max_evaluations=NUMBER_OF_EVALUATIONS),
     )
