@@ -26,6 +26,15 @@ python run_algorithm.py <island>
    ```
 
 ## Todo
+1. Add information, from which island and which epoque comes migrant.
+2. Add more configuration json files to match different topologies (star, ring, mesh).
+3. Test for e.g. 10 islands
+4. Add script for running multiple islands automatically.
+5. Do some viusualisation on function Rastrigin 2-dim to show solutions and indicate migrants with different color.
+
+
+------ 
+Old ones:
 1. Add creating queues using docker-compose. I tried to do that in 
 `utils/prepare_queues.py` and `utils/Dockerfile_prepare_queues` but after
    adding service in docker-compose container exits. We should wait for rabbitmq being available.
