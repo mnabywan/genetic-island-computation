@@ -6,14 +6,14 @@ services:
     ports:
         - 5672:5672
         - 15672:15672
-  prepare_queues:
-    build:
-      context: ./utils
-      dockerfile: Dockerfile_prepare_queues
-    depends_on:
-      - rabbitmq
-    links:
-      - rabbitmq
+#  prepare_queues:
+#    build:
+#      context: ./utils
+#      dockerfile: Dockerfile_prepare_queues
+#    depends_on:
+#      - rabbitmq
+#    links:
+#      - rabbitmq
 #  remove_queues:
 #    build:
 #      context: ./utils

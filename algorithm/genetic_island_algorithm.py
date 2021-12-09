@@ -1,7 +1,7 @@
 import json
 
 from jmetal.algorithm.singleobjective.genetic_algorithm import GeneticAlgorithm
-from typing import TypeVar, Generic, List
+from typing import TypeVar, List
 
 from jmetal.config import store
 from jmetal.core.operator import Mutation, Crossover, Selection
@@ -11,7 +11,7 @@ from jmetal.util.generator import Generator
 from jmetal.util.termination_criterion import TerminationCriterion
 import random
 import pika
-from jmetal.core.solution import FloatSolution
+from solution.float_island_solution import FloatIslandSolution
 
 S = TypeVar('S')
 R = TypeVar('R')
@@ -85,26 +85,38 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
                 return
 
             #TODO: migrate every chosen individual
+            import time
             for i in individuals_to_migrate:
                 destination = random.choice([i for i in range(0, self.number_of_islands) if i != self.island])
                 print(f"Destination {destination}")
                 self.channel.basic_publish(exchange='',
-                                      routing_key=f"island-from-{self.island}-to-{destination}",
-                                      body=json.dumps(i.__dict__))
+                                      routing_key=f"island-0",
+                                      body=f'test {i}, time={time.time()}',
+                                      properties=pika.BasicProperties(delivery_mode=2))
+                # print(json.dumps(i.__dict__))
+                # self.channel.basic_publish(exchange='',
+                #                       routing_key=f"island-from-{self.island}-to-{destination}",
+                #                       body=json.dumps(i.__dict__),
+                #                            properties=pika.BasicProperties(delivery_mode=2))
 
     def add_new_individuals(self):
         new_individuals = []
         for i in range(0, 10):
             method, properties, body = self.channel.basic_get(f'island-{self.island}')
+
             if body:
                 data_str = body.decode("utf-8")
                 data = json.loads(data_str)
-                float_solution = FloatSolution(data['lower_bound'], data['upper_bound'],
+                float_solution = FloatIslandSolution(data['lower_bound'], data['upper_bound'],
                                                data['number_of_variables'], data['number_of_objectives'],
+                                                     from_island=data["from_island"],from_evaluation=data["from_evaluation"]
                                                )
+
                 float_solution.objectives = data['objectives']
                 float_solution.variables = data['variables']
                 float_solution.number_of_constraints = data['number_of_constraints']
+                print("AAADDDDDEEEEEEEDDDDDD")
+                print(float_solution.__str__())
                 new_individuals.append(float_solution)
 
         self.solutions += new_individuals
@@ -122,7 +134,8 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
 
         self.solutions = self.replacement(self.solutions, offspring_population)
 
-        print("Number of evaluations: {}".format(self.evaluations))
+
+        #print("Number of evaluations: {}".format(self.evaluations))
 
 
     def update_min_fitness_per_evaluation(self):
