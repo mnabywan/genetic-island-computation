@@ -75,6 +75,7 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         emigrants = [population.pop(random.randrange(len(population))) for _ in range(0, number_of_emigrants)]
         return emigrants
 
+
     def migrate_individuals(self):
         if self.evaluations - self.last_migration_evolution >= self.migration_interval:
             try:
@@ -87,17 +88,13 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
             #TODO: migrate every chosen individual
             import time
             for i in individuals_to_migrate:
+                print(i.__dict__)
                 destination = random.choice([i for i in range(0, self.number_of_islands) if i != self.island])
                 print(f"Destination {destination}")
                 self.channel.basic_publish(exchange='',
-                                      routing_key=f"island-0",
-                                      body=f'test {i}, time={time.time()}',
-                                      properties=pika.BasicProperties(delivery_mode=2))
-                # print(json.dumps(i.__dict__))
-                # self.channel.basic_publish(exchange='',
-                #                       routing_key=f"island-from-{self.island}-to-{destination}",
-                #                       body=json.dumps(i.__dict__),
-                #                            properties=pika.BasicProperties(delivery_mode=2))
+                                           routing_key=f"island-from-{self.island}-to-{destination}",
+                                           body=json.dumps(i.__dict__))
+
 
     def add_new_individuals(self):
         new_individuals = []
@@ -105,13 +102,18 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
             method, properties, body = self.channel.basic_get(f'island-{self.island}')
 
             if body:
+                print('addddd')
                 data_str = body.decode("utf-8")
+
                 data = json.loads(data_str)
+                print(data)
+                print(type(data))
                 float_solution = FloatIslandSolution(data['lower_bound'], data['upper_bound'],
                                                data['number_of_variables'], data['number_of_objectives'],
+                                                     constraints=data['constraints'], variables=data['variables'], objectives=data['objectives'],
                                                      from_island=data["from_island"],from_evaluation=data["from_evaluation"]
                                                )
-
+                print(f"float ")
                 float_solution.objectives = data['objectives']
                 float_solution.variables = data['variables']
                 float_solution.number_of_constraints = data['number_of_constraints']
