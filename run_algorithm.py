@@ -13,7 +13,7 @@ def run():
     with open(conf_file) as file:
         configuration = json.loads(file.read())
 
-    NUMBER_OF_VARIABLES = 2
+    NUMBER_OF_VARIABLES = int(configuration['number_of_variables'])
     NUMBER_OF_EVALUATIONS = 100000
     problem = Rastrigin(NUMBER_OF_VARIABLES)
 

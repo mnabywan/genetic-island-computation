@@ -45,7 +45,6 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         self.island = island
         self.last_migration_evolution = 0
 
-        #TODO change connection to rabitmq from Docker
         self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
         self.channel = self.connection.channel()
 
@@ -53,7 +52,6 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         self.queue_name = f'island-{self.island}'
 
         # Configure queue for that island
-
         self.channel.queue_bind(exchange='amq.direct',
                            queue=self.queue_name)
 
@@ -85,9 +83,8 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
             except ValueError:
                 return
 
-            #TODO: migrate every chosen individual
-            import time
             for i in individuals_to_migrate:
+                i.from_evalution = self.evaluations
                 print(i.__dict__)
                 destination = random.choice([i for i in range(0, self.number_of_islands) if i != self.island])
                 print(f"Destination {destination}")

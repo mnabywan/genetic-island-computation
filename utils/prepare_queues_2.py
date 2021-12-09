@@ -28,6 +28,8 @@ def create_queues():
         channel.queue_declare(queue=queue_name)
         for i in range(0, number_of_islands):
             if i != island:
+                if rabbitmq_delays[str(island)][i] == -1:
+                    pass
                 try:
                     delay_channel.queue_declare(queue=f'island-from-{island}-to-{i}', arguments={
                         'x-message-ttl': rabbitmq_delays[str(island)][i],  # Delay until the message is transferred in milliseconds.
