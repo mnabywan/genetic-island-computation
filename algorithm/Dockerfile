@@ -11,7 +11,7 @@ RUN pip install -r requirements.txt
 
 # copy the content of the local src directory to the working directory
 COPY configurations/ .
-COPY run_algorithm.py .
+COPY ../run_algorithm.py .
 COPY genetic_island_algorithm.py .
 # command to run on container start
 CMD [ "python", "run_algorithm.py" ]

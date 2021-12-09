@@ -4,9 +4,9 @@ import pika
 from jmetal.core.solution import FloatSolution
 import json
 
-connection = pika.BlockingConnection()
+connection = pika.BlockingConnection(pika.ConnectionParameters(
+               host='localhost'))
 channel = connection.channel()
-
 
 def on_message(channel, method_frame, header_frame, body):
     print(body)
@@ -27,8 +27,10 @@ def on_message(channel, method_frame, header_frame, body):
 
 def prepare(island_num):
     print(f"ISLAND {island_num}")
-    channel.basic_consume(f'island-{island_num}', on_message)
-    consume()
+    while True:
+        method, properties, body = channel.basic_get(queue=f'hello', auto_ack=True)
+        print(body)
+        time.sleep(10)
 
 #
 # def consume(island_num):
@@ -44,11 +46,11 @@ def prepare(island_num):
 #             # print(body)
 #             time.sleep(10)
 
-    try:
-        channel.start_consuming()
-    except KeyboardInterrupt:
-        channel.stop_consuming()
-    connection.close()
+    # try:
+    #     channel.start_consuming()
+    # except KeyboardInterrupt:
+    #     channel.stop_consuming()
+    # connection.close()
 
 
 if __name__ == '__main__':

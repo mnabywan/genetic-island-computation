@@ -1,22 +1,19 @@
 import sys
 
-from genetic_island_algorithm import GeneticIslandAlgorithm
+from algorithm.genetic_island_algorithm import GeneticIslandAlgorithm
 from jmetal.problem.singleobjective.unconstrained import Rastrigin
-from jmetal.operator import BinaryTournamentSelection, PolynomialMutation, SBXCrossover, BestSolutionSelection
+from jmetal.operator import BinaryTournamentSelection, PolynomialMutation, SBXCrossover
 from jmetal.util.termination_criterion import StoppingByEvaluations
-import matplotlib.pyplot as plt
 import json
-import shutil
-import os
-
+from generator.island_solution_generator import IslandSolutionGenerator
 
 def run():
-    conf_file = 'configurations/algorithm_configuration.json'
+    conf_file = 'algorithm/configurations/algorithm_configuration.json'
     island = int(sys.argv[1])
     with open(conf_file) as file:
         configuration = json.loads(file.read())
 
-    NUMBER_OF_VARIABLES = 2
+    NUMBER_OF_VARIABLES = int(configuration['number_of_variables'])
     NUMBER_OF_EVALUATIONS = 100000
     problem = Rastrigin(NUMBER_OF_VARIABLES)
 
@@ -36,6 +33,7 @@ def run():
         rabbitmq_delays=configuration["island_delays"],
         termination_criterion=StoppingByEvaluations(
             max_evaluations=NUMBER_OF_EVALUATIONS),
+        population_generator=IslandSolutionGenerator(island_number=island)
     )
 
     genetic_island_algorithm.run()

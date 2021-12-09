@@ -1,7 +1,7 @@
 import json
 
 from jmetal.algorithm.singleobjective.genetic_algorithm import GeneticAlgorithm
-from typing import TypeVar, Generic, List
+from typing import TypeVar, List
 
 from jmetal.config import store
 from jmetal.core.operator import Mutation, Crossover, Selection
@@ -11,7 +11,7 @@ from jmetal.util.generator import Generator
 from jmetal.util.termination_criterion import TerminationCriterion
 import random
 import pika
-from jmetal.core.solution import FloatSolution
+from solution.float_island_solution import FloatIslandSolution
 
 S = TypeVar('S')
 R = TypeVar('R')
@@ -45,7 +45,6 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         self.island = island
         self.last_migration_evolution = 0
 
-        #TODO change connection to rabitmq from Docker
         self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
         self.channel = self.connection.channel()
 
@@ -53,7 +52,6 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         self.queue_name = f'island-{self.island}'
 
         # Configure queue for that island
-
         self.channel.queue_bind(exchange='amq.direct',
                            queue=self.queue_name)
 
@@ -75,6 +73,7 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         emigrants = [population.pop(random.randrange(len(population))) for _ in range(0, number_of_emigrants)]
         return emigrants
 
+
     def migrate_individuals(self):
         if self.evaluations - self.last_migration_evolution >= self.migration_interval:
             try:
@@ -84,27 +83,39 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
             except ValueError:
                 return
 
-            #TODO: migrate every chosen individual
             for i in individuals_to_migrate:
+                i.from_evalution = self.evaluations
+                print(i.__dict__)
                 destination = random.choice([i for i in range(0, self.number_of_islands) if i != self.island])
                 print(f"Destination {destination}")
                 self.channel.basic_publish(exchange='',
-                                      routing_key=f"island-from-{self.island}-to-{destination}",
-                                      body=json.dumps(i.__dict__))
+                                           routing_key=f"island-from-{self.island}-to-{destination}",
+                                           body=json.dumps(i.__dict__))
+
 
     def add_new_individuals(self):
         new_individuals = []
         for i in range(0, 10):
             method, properties, body = self.channel.basic_get(f'island-{self.island}')
+
             if body:
+                print('addddd')
                 data_str = body.decode("utf-8")
+
                 data = json.loads(data_str)
-                float_solution = FloatSolution(data['lower_bound'], data['upper_bound'],
+                print(data)
+                print(type(data))
+                float_solution = FloatIslandSolution(data['lower_bound'], data['upper_bound'],
                                                data['number_of_variables'], data['number_of_objectives'],
+                                                     constraints=data['constraints'], variables=data['variables'], objectives=data['objectives'],
+                                                     from_island=data["from_island"],from_evaluation=data["from_evaluation"]
                                                )
+                print(f"float ")
                 float_solution.objectives = data['objectives']
                 float_solution.variables = data['variables']
                 float_solution.number_of_constraints = data['number_of_constraints']
+                print("AAADDDDDEEEEEEEDDDDDD")
+                print(float_solution.__str__())
                 new_individuals.append(float_solution)
 
         self.solutions += new_individuals
@@ -122,7 +133,8 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
 
         self.solutions = self.replacement(self.solutions, offspring_population)
 
-        print("Number of evaluations: {}".format(self.evaluations))
+
+        #print("Number of evaluations: {}".format(self.evaluations))
 
 
     def update_min_fitness_per_evaluation(self):
