@@ -62,6 +62,8 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         print(delays)
         for i in range(0, self.number_of_islands):
             if i != self.island:
+                if rabbitmq_delays[str(island)][i] == -1:
+                    break
                 self.delay_channel.queue_bind(exchange='amq.direct',
                                               queue=f'island-from-{self.island}-to-{i}')
 
@@ -86,7 +88,7 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
             for i in individuals_to_migrate:
                 i.from_evalution = self.evaluations
                 print(i.__dict__)
-                destination = random.choice([i for i in range(0, self.number_of_islands) if i != self.island])
+                destination = random.choice([i for i in range(0, self.number_of_islands) if i != self.island and self.rabbitmq_delays[str(self.island)][i] != -1])
                 print(f"Destination {destination}")
                 self.channel.basic_publish(exchange='',
                                            routing_key=f"island-from-{self.island}-to-{destination}",
