@@ -18,7 +18,7 @@ class FloatIslandSolution(FloatSolution):
 
     def __str__(self) -> str:
         return 'Float Island Solution(variables={},objectives={},constraints={},from_island={},from_evaluation={})'.format(self.variables, self.objectives,
-                                                                                           self.constraints, self.from_island,self.from_evaluation)
+                                                                                           self.constraints, self.from_island, self.from_evaluation)
 
     def copy(self):
         new_solution = FloatIslandSolution(

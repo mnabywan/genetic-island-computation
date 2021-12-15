@@ -1,5 +1,9 @@
 {
+  "number_of_evaluations" : 20000,
   "number_of_variables" : 10,
+  "population_size": 30,
+  "offspring_population_size": 6,
+
   "number_of_islands": 3,
   "number_of_migrants": 3,
   "migration_interval": 2000,

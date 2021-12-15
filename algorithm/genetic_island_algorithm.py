@@ -63,7 +63,7 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         for i in range(0, self.number_of_islands):
             if i != self.island:
                 if rabbitmq_delays[str(island)][i] == -1:
-                    break
+                    continue
                 self.delay_channel.queue_bind(exchange='amq.direct',
                                               queue=f'island-from-{self.island}-to-{i}')
 
@@ -86,10 +86,9 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
                 return
 
             for i in individuals_to_migrate:
-                i.from_evalution = self.evaluations
-                print(i.__dict__)
+                #print(i.__dict__)
                 destination = random.choice([i for i in range(0, self.number_of_islands) if i != self.island and self.rabbitmq_delays[str(self.island)][i] != -1])
-                print(f"Destination {destination}")
+                #print(f"Destination {destination}")
                 self.channel.basic_publish(exchange='',
                                            routing_key=f"island-from-{self.island}-to-{destination}",
                                            body=json.dumps(i.__dict__))
@@ -97,26 +96,22 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
 
     def add_new_individuals(self):
         new_individuals = []
-        for i in range(0, 10):
+        for i in range(0, 5):
             method, properties, body = self.channel.basic_get(f'island-{self.island}')
 
             if body:
-                print('addddd')
                 data_str = body.decode("utf-8")
 
                 data = json.loads(data_str)
-                print(data)
-                print(type(data))
                 float_solution = FloatIslandSolution(data['lower_bound'], data['upper_bound'],
                                                data['number_of_variables'], data['number_of_objectives'],
                                                      constraints=data['constraints'], variables=data['variables'], objectives=data['objectives'],
-                                                     from_island=data["from_island"],from_evaluation=data["from_evaluation"]
+                                                     from_island=data["from_island"], from_evaluation=data["from_evaluation"]
                                                )
-                print(f"float ")
                 float_solution.objectives = data['objectives']
                 float_solution.variables = data['variables']
                 float_solution.number_of_constraints = data['number_of_constraints']
-                print("AAADDDDDEEEEEEEDDDDDD")
+                print('add')
                 print(float_solution.__str__())
                 new_individuals.append(float_solution)
 
@@ -132,11 +127,12 @@ class GeneticIslandAlgorithm(GeneticAlgorithm):
         mating_population = self.selection(self.solutions)
         offspring_population = self.reproduction(mating_population)
         offspring_population = self.evaluate(offspring_population)
-
+        for i in offspring_population:
+            i.from_evaluation = self.evaluations
         self.solutions = self.replacement(self.solutions, offspring_population)
 
 
-        #print("Number of evaluations: {}".format(self.evaluations))
+        print("Number of evaluations: {}".format(self.evaluations))
 
 
     def update_min_fitness_per_evaluation(self):

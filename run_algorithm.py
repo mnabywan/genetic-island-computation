@@ -13,15 +13,31 @@ def run():
     with open(conf_file) as file:
         configuration = json.loads(file.read())
 
-    NUMBER_OF_VARIABLES = int(configuration['number_of_variables'])
-    NUMBER_OF_EVALUATIONS = 100000
+    try:
+        NUMBER_OF_VARIABLES = int(configuration['number_of_variables'])
+        NUMBER_OF_EVALUATIONS = int(configuration['number_of_evaluations'])
+        POPULATION_SIZE = int(configuration['population_size'])
+        OFFSPRING_POPULATION_SIZE = int(configuration['offspring_population_size'])
+
+        if NUMBER_OF_VARIABLES <= 0:
+            raise ValueError('Number of variables have to be positive')
+        if NUMBER_OF_EVALUATIONS <= 0:
+            raise ValueError('Number of evaluations have to be positive')
+        if POPULATION_SIZE <= 0:
+            raise ValueError('Population size has to be positive')
+        if OFFSPRING_POPULATION_SIZE <= 0:
+            raise ValueError('Offspring population size have to be positive')
+    except ValueError:
+        print("Invalid configuration")
+
+
     problem = Rastrigin(NUMBER_OF_VARIABLES)
 
     print(configuration["number_of_islands"])
     genetic_island_algorithm = GeneticIslandAlgorithm(
         problem=problem,
-        population_size=30,
-        offspring_population_size=6,
+        population_size=POPULATION_SIZE,
+        offspring_population_size=OFFSPRING_POPULATION_SIZE,
         mutation=PolynomialMutation(
             1.0 / problem.number_of_variables, 20.0),
         crossover=SBXCrossover(0.9, 20.0),
